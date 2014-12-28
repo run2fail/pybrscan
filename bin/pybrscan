@@ -1,0 +1,75 @@
+#!/usr/bin/env python3
+'''
+The "binary" to the pybrscan module that enables to (re-)start and stop the
+daemon. Additionally the current status can be queried.
+'''
+
+import logging
+import daemonocle
+import pybrscan
+import sys
+import configparser
+import argparse
+import os
+
+def _parse():
+    ''' Parse arguments
+
+    :returns: Parsed arguments as dictionary
+    '''
+    parser = argparse.ArgumentParser(description='Register computer with a Brother scanner device for scan to email or scan to file.')
+
+    parser.add_argument(
+        '--ini', '-i',
+        default='%s/.pybrscan' % os.path.expanduser('~'),
+        help='ini file with the configuration (default: ~/.pybrscan)')
+
+    parser.add_argument(
+        'command',
+        nargs='?',
+        choices=['start', 'stop', 'status', 'restart'],
+        default='start',
+        help='Commmand to run')
+
+    return vars(parser.parse_args())
+
+def main():
+    ''' Takes care of the argument parsing and creates a PyBrScan instance '''
+    args = _parse()
+    try:
+        with open(args['ini'], 'r') as inifile_fd:
+            config = configparser.ConfigParser()
+            config.readfp(inifile_fd)
+    except FileNotFoundError as exception:
+        sys.stderr.write('Could not read ini file: %s\n' % exception)
+        sys.exit(1)
+    except PermissionError as exception:
+        sys.stderr.write('Could not read ini file: %s\n' % exception)
+        sys.exit(1)
+
+    pid = config['General'].get('pid', '/tmp/pybrscan.pid')
+    log = config['General'].get('log', '/tmp/pybrscan.log')
+    register = int(config['General'].get('register', 60))
+    verbose = config['General'].get('verbose', False)
+
+    logging.basicConfig(
+        format='%(asctime)s, %(levelname)8s: %(message)s',
+        level=logging.INFO,
+        filename=log)
+    logger = logging.getLogger('pybrscan')
+
+    if verbose:
+        logger.setLevel(logging.DEBUG)
+
+    pybrs = pybrscan.PyBrScan(args['ini'], logger)
+
+    daemon = daemonocle.Daemon(
+        worker=pybrs.run,
+        shutdown_callback=pybrs.shutdown,
+        pidfile=pid,
+        stop_timeout=max(60, register),
+    )
+    daemon.do_action(args['command'])
+
+if __name__ == '__main__':
+    main()

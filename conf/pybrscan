@@ -1,0 +1,33 @@
+[General]
+iface=wlan0
+port=54925
+printer_addr=printer
+printer_port=161
+pid=/tmp/pybrscan.pid
+log=/tmp/pybrscan.log
+verbose=True
+register=30
+duration=300
+
+resolution=300
+mode=True Gray
+dst_dir=/tmp/pybrscan
+#user=username
+
+[IMAGE]
+mode=24bit Color
+resolution=600
+format=png
+
+[EMAIL]
+email_mta=sendmail
+email_addr=
+email_port=25
+email_user=
+email_password=
+
+[OCR]
+
+[FILE]
+resolution=300
+format=pdf

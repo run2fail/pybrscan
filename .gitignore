@@ -1,0 +1,9 @@
+__pycache__
+dist
+MANIFEST
+Locker.egg-info
+build
+.coverage
+cover
+*.pyc
+test.sh
